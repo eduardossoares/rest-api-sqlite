@@ -1,17 +1,21 @@
-import "dotenv/config";
+import { config } from "dotenv";
 import z from "zod";
 
+if (process.env.NODE_ENV === "test") {
+  config({ path: ".env.test" });
+} else config({ path: ".env" });
+
 const envSchema = z.object({
-  NODE_ENV: z.enum(["development", "production", "test"]).default("production"),
-  DATABASE_URL: z.string(),
+  NODE_ENV: z.enum(["development", "test", "production"]).default("production"),
   PORT: z.number().default(3333),
+  DATABASE_URL: z.string(),
 });
 
 const _env = envSchema.safeParse(process.env);
 
 if (_env.success === false) {
-  console.log("Invalid envorinment variables", _env.error.format());
-  throw new Error("Invalid envorinment variables");
+  console.log(`Invalid envorinments variables: ${_env.error.format()}`);
+  throw new Error("Invalid envorinments variables");
 }
 
 export const env = _env.data;

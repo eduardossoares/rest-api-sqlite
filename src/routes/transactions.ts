@@ -4,7 +4,7 @@ import { database } from "../configs/db";
 import { checkSessionIdExists } from "../middlewares/check-session-id-exists";
 import z from "zod";
 export const transactionsRoutes = async (app: FastifyInstance) => {
-  app.addHook("preHandler", async (req, res) => {
+  app.addHook("preHandler", async req => {
     console.log(`[${req.method}] ${req.url}`);
   });
 
@@ -16,13 +16,21 @@ export const transactionsRoutes = async (app: FastifyInstance) => {
     });
 
     const { amount, title, type } = createTransactionBodySchema.parse(req.body);
+    let { sessionId } = req.cookies;
 
-    const { sessionId } = req.cookies;
+    if (!sessionId) {
+      sessionId = crypto.randomUUID();
+
+      res.cookie("sessionId", sessionId, {
+        path: "/",
+        maxAge: 60 * 60 * 24 * 7,
+      });
+    }
 
     await database("transactions").insert({
       id: crypto.randomUUID(),
-      amount: type === "credit" ? amount : amount * -1,
       session_id: sessionId,
+      amount: type === "credit" ? amount : amount * -1,
       title,
     });
 
